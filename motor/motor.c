@@ -171,11 +171,11 @@ static void loop(void){
     int M1 = 95; // the bases speeds of the Right engine
     int M2 = 95; // the bases speeds of the Left engine
     int m1Speed, m2Speed;  //the actual speeds of the L/R engine
-    double KP =  0.5; // Coefficients of PID controller proportionnel
+    double KP =  2.5; // Coefficients of PID controller proportionnel
     double KI = 0; // Coefficients of PID controller integral
     double KD = -0.15; // Coefficients of PID controller derviate
     uint16_t sensors[6];
-    int motoradjust;
+    double motoradjust;
 
     // look for float or double 
     // add stop if inside things are white

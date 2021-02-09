@@ -1,0 +1,6 @@
+[submodule "motor"]
+	path = motor
+	url = ./motor
+[submodule "libopencm3"]
+	path = libopencm3
+	url = ./libopencm3/

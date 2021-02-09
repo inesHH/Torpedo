@@ -1,0 +1,218 @@
+#include <stdint.h>
+
+#include <libopencm3/stm32/rcc.h>
+#include <libopencm3/stm32/gpio.h>
+#include <libopencm3/stm32/timer.h>
+#include <libopencm3/stm32/f4/nvic.h>
+
+
+
+
+#define PWM_Steps 256
+#define PWM_Frequency 500// 10 KHz
+
+
+
+#define MOTOR_RIGHT_PWM     GPIO9
+#define MOTOR_RIGHT_PHASE   GPIO7
+
+
+
+
+/* Set STM32 to 168 MHz. */
+static void clock_setup(void){
+	rcc_clock_setup_pll(&rcc_hse_8mhz_3v3[RCC_CLOCK_3V3_168MHZ]);
+}
+
+
+static void tim_init(void){
+    uint32_t TIMER_Frequency = rcc_apb1_frequency * 2;
+    uint32_t COUNTER_Frequency = PWM_Steps * PWM_Frequency;
+    uint32_t PSC_Value = (TIMER_Frequency / COUNTER_Frequency) - 1;
+    uint16_t ARR_Value = PWM_Steps - 1;
+
+    //-------------------------------------------------------------------------------------
+
+	rcc_periph_clock_enable(RCC_TIM3);  /* Enable TIM3 clock. */
+	rcc_periph_reset_pulse(RST_TIM3); /* Reset TIM2 peripheral to defaults. */
+
+    /* Set the timers global mode to:
+	 * - use no divider
+	 * - alignment edge
+	 * - count direction up
+	 * */
+	timer_set_mode(TIM3, TIM_CR1_CKD_CK_INT, TIM_CR1_CMS_EDGE, TIM_CR1_DIR_UP);
+
+
+	timer_set_prescaler(TIM3, PSC_Value); // set prescaler
+
+	timer_enable_preload(TIM3);                // enable preload
+	timer_continuous_mode(TIM3);               // set continuous mode
+	timer_set_repetition_counter(TIM3, 0);     // set repetition counter
+	timer_set_period(TIM3, ARR_Value);         // set period
+}
+
+static void pwm_init_chanels(void){
+
+    //disable TIM4 channels
+    timer_disable_oc_output(TIM3,TIM_OC4);
+    timer_disable_oc_output(TIM3,TIM_OC3);
+
+
+    timer_set_oc_mode(TIM3,TIM_OC4,TIM_OCM_PWM1);
+    timer_set_oc_mode(TIM3,TIM_OC3,TIM_OCM_PWM1);
+
+
+    timer_enable_oc_preload(TIM3, TIM_OC4);
+    timer_enable_oc_preload(TIM3, TIM_OC3);
+
+    timer_set_oc_value(TIM3,TIM_OC4,0);
+    timer_set_oc_value(TIM3,TIM_OC3,0);
+
+
+    timer_enable_oc_output(TIM3,TIM_OC4);
+    timer_enable_oc_output(TIM3,TIM_OC3);
+
+    timer_enable_counter(TIM3);
+}
+
+static void pwm_set_duty_cycle(uint8_t duty_cycle){
+    timer_set_oc_value(TIM3,TIM_OC4,duty_cycle);
+
+}
+
+static void pwm2_set_duty_cycle(uint8_t duty_cycle){
+    timer_set_oc_value(TIM3,TIM_OC3,duty_cycle);
+}
+
+
+
+static void pwm_start(void){
+    timer_generate_event(TIM3, TIM_EGR_UG);
+	timer_enable_counter(TIM3);
+}
+
+
+
+
+
+
+
+static void gpio_setup(void){
+    /* Enable GPIOC clock. */
+	rcc_periph_clock_enable(RCC_GPIOC);
+
+    gpio_mode_setup(GPIOC, GPIO_MODE_OUTPUT, GPIO_PUPD_PULLUP, GPIO7 | GPIO6);
+
+
+    gpio_mode_setup(GPIOB, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO9 | GPIO8);
+	gpio_set_output_options(GPIOC, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ,  GPIO9 | GPIO8);/* Push Pull, Speed 50 MHz */
+	gpio_set_af(GPIOC, GPIO_AF2, GPIO9 | GPIO8); // Alternate Function: TIM3 CH4
+
+    //-------------------------------------------------------------------------------------------
+/*
+    gpio_mode_setup(GPIOB, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO8);
+	//gpio_set_output_options(GPIOC, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO8); Push Pull, Speed 50 MHz
+	gpio_set_af(GPIOC, GPIO_AF2, GPIO8); // Alternate Function: TIM3 CH3
+
+    gpio_mode_setup(GPIOC, GPIO_MODE_OUTPUT, GPIO_PUPD_PULLUP, GPIO6);*/
+}
+
+static void motor_right(uint16_t pwm, uint8_t phase){
+
+    pwm_set_duty_cycle(pwm);
+
+    if(phase == 1) gpio_clear(GPIOC, MOTOR_RIGHT_PHASE);
+    else gpio_set(GPIOC, MOTOR_RIGHT_PHASE);
+}
+
+static void motor_left(uint8_t pwm, uint8_t phase){
+
+    pwm2_set_duty_cycle(pwm);
+
+    if(phase == 1) gpio_clear(GPIOC, GPIO6);
+    else gpio_set(GPIOC, GPIO6);
+}
+
+
+
+
+
+
+
+int main(void){
+
+    int i;
+
+	clock_setup();
+
+
+    tim_init();
+    gpio_setup();
+    pwm_init_chanels();
+
+
+    pwm_set_duty_cycle(0);
+    //pwm2_set_duty_cycle(0);
+    pwm_start();
+
+
+
+
+	while (1) {
+
+        //pwm_set_duty_cycle(50);
+        timer_set_oc_value(TIM3,TIM_OC4,250);
+        for (i = 0; i < 6000000; i++)  __asm__("nop");
+
+       /* pwm_set_duty_cycle(255);
+        for (i = 0; i < 5000000; i++)  __asm__("nop");
+        pwm_set_duty_cycle(150);
+        for (i = 0; i < 5000000; i++)  __asm__("nop");
+        pwm_set_duty_cycle(50);
+        for (i = 0; i < 5000000; i++)  __asm__("nop");
+        pwm_set_duty_cycle(0);
+        for (i = 0; i < 5000000; i++)  __asm__("nop");
+
+
+        for (i = 0; i < 6000000; i++)  __asm__("nop");
+        pwm_set_duty_cycle(50);
+        for (i = 0; i < 6000000; i++)  __asm__("nop");
+        pwm_set_duty_cycle(150);
+        for (i = 0; i < 6000000; i++)  __asm__("nop");*/
+
+       // motor_right(255,1);
+       // motor_left(255,0);
+        //gpio_set(GPIOC, GPIO6);
+        //motor_left(50,0);
+
+        //for (i = 0; i < 60000000; i++)  __asm__("nop");
+
+       // motor_right(200,0);
+       // motor_left(255,1);
+
+       // for (i = 0; i < 60000000; i++)  __asm__("nop");
+
+        /*for(int jj=0; jj<255; jj++){
+             pwm_set_duty_cycle(jj);
+
+             for (i = 0; i < 200000; i++)  __asm__("nop");
+
+        }
+
+        for (i = 0; i < 6000000; i++)  __asm__("nop");
+
+        for(int jj=255; jj>0; jj--){
+             pwm_set_duty_cycle(jj);
+
+             for (i = 0; i < 200000; i++)  __asm__("nop");
+
+        }*/
+
+
+
+	}
+
+	return 0;
+
+}

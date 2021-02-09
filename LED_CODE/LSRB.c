@@ -13,20 +13,6 @@ int leftNudge;
 int replaystage;
 int rightNudge;
 
-// Enable Pins
-#define enl 9   // LEFT
-#define enr 10  // RIGHT
-
-// speed of motor
-#define spd 150
-
-#define leapTime 200
-
-// Motors
-#define leftMotor1  5
-#define leftMotor2  2
-#define rightMotor1 4
-#define rightMotor2 3
 
 //for storing path details
 char path[30] = {};

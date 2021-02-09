@@ -9,7 +9,6 @@
 #include "QTRSensor.c"
 
 
-
 #define PWM_STEPS 256
 #define PWM_FREQUENCY 500 // 500 Hz
 
@@ -26,9 +25,6 @@
 #define MOTOR_LEFT_IN1      GPIO6
 #define MOTOR_LEFT_IN2      GPIO10
 #define MOTOR_LEFT_CH       TIM_OC3
-
-#define SENSORDroit
-
 
 
 
@@ -168,8 +164,8 @@ static void loop(void){
     /* Calculate the calibration values */
     int32_t sensorsCalib[6]= {0, 0, 0, 0, 0, 0};
     CalibrateValues(sensorsCalib);
-    int M1 = 95; // the bases speeds of the Right engine
-    int M2 = 95; // the bases speeds of the Left engine
+    int M1 = 180; // the bases speeds of the Right engine
+    int M2 = 180; // the bases speeds of the Left engine
     int m1Speed, m2Speed;  //the actual speeds of the L/R engine
     double KP =  2.5; // Coefficients of PID controller proportionnel
     double KI = 0; // Coefficients of PID controller integral
@@ -201,8 +197,8 @@ static void loop(void){
         motoradjust = KP *error + KI * integralerror + KD *(lasterror - error);
         lasterror = error; // for derivation
 
-        m1Speed = M1 + motoradjust;
-        m2Speed = M2 - motoradjust; 
+        m1Speed = M1 - motoradjust;
+        m2Speed = M2 + motoradjust; 
 
         // keep the speeds in the authorised intervals
         if (m1Speed < 0) {

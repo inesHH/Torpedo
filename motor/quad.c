@@ -55,4 +55,10 @@ static void GoBack(){
        motor_right(0,1);
        motor_left(0,1);
 }
-// quadrillage detection we'll use the 3rd and 4th data of sensors value to detection the edges 
+// quadrillage detection we'll use the 1sd and 8th data of sensors value to detection the edges 
+// the LeftHandWall Algorithm
+
+static void LeftHandWall(){
+       
+
+}

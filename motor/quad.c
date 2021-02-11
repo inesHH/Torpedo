@@ -5,9 +5,6 @@
 #include <libopencm3/stm32/timer.h>
 #include <libopencm3/stm32/f4/nvic.h>
 
-//#include "api.h"
-#include "QTRSensor.c"
-
 static void GoStraight(){
        motor_right(180,1);
        motor_left(180,1);
@@ -59,6 +56,7 @@ static void GoBack(){
 // the LeftHandWall Algorithm
 
 static void LeftHandWall(){
-       
+    /* grid dicovery part */  
+    return 0;    
 
 }

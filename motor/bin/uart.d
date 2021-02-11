@@ -1,4 +1,4 @@
-bin/motor.o: motor.c ../libopencm3/include/libopencm3/stm32/rcc.h \
+bin/uart.o: uart.c ../libopencm3/include/libopencm3/stm32/rcc.h \
  ../libopencm3/include/libopencm3/cm3/common.h \
  /usr/lib/gcc/arm-none-eabi/6.3.1/include/stdint.h \
  /usr/include/newlib/stdint.h \
@@ -19,16 +19,8 @@ bin/motor.o: motor.c ../libopencm3/include/libopencm3/stm32/rcc.h \
  ../libopencm3/include/libopencm3/stm32/common/gpio_common_f24.h \
  ../libopencm3/include/libopencm3/stm32/common/gpio_common_f234.h \
  ../libopencm3/include/libopencm3/stm32/common/gpio_common_all.h \
- ../libopencm3/include/libopencm3/stm32/timer.h \
- ../libopencm3/include/libopencm3/stm32/f4/timer.h \
- ../libopencm3/include/libopencm3/stm32/common/timer_common_f24.h \
- ../libopencm3/include/libopencm3/stm32/common/timer_common_all.h \
- ../libopencm3/include/libopencm3/stm32/f4/nvic.h \
- ../libopencm3/include/libopencm3/cm3/nvic.h \
- ../libopencm3/include/libopencm3/dispatch/nvic.h \
  ../libopencm3/include/libopencm3/stm32/usart.h \
  ../libopencm3/include/libopencm3/stm32/f4/usart.h \
  ../libopencm3/include/libopencm3/stm32/common/usart_common_f24.h \
  ../libopencm3/include/libopencm3/stm32/common/usart_common_f124.h \
- ../libopencm3/include/libopencm3/stm32/common/usart_common_all.h \
- ../LED_CODE/QTRSensor.c ../LED_CODE/delay.c
+ ../libopencm3/include/libopencm3/stm32/common/usart_common_all.h

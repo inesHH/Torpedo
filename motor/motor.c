@@ -28,6 +28,7 @@
 
 enum State {PID, TRANS, ROTATE};
 enum State S;
+int32_t sensorsCalib[6]= {0, 0, 0, 0, 0, 0};
 
 /* Set STM32 to 168 MHz. */
 static void clock_setup(void){
@@ -181,73 +182,70 @@ static void motors_init(void){
     pwm_start();
 }
 
-static void GoBack(void){
-       motor_right(100,0);
-       motor_left(180,1);
-       uint16_t sensors[6];
-       readSensor(sensors);
-       while (sensors[GridDetectPIND] > 250 || sensors[GridDetectPING] > 250 ||
-       sensors[CenterPIND] < 550 || sensors[CenterPING] < 550)
-       {
-           readSensor(sensors);
-       }
-       motor_right(0,1);
-       motor_left(0,1);
-}
-
 static void TurnRight(void){
-       motor_right(80,0);
-       motor_left(100,1);
+       motor_right(60,0);
+       motor_left(70,1);
        uint16_t sensors[6];
        readSensor(sensors);
        // get to the dark grid pins are dark. 
-       while (sensors[GridDetectPIND] < 550 || sensors[GridDetectPING] < 550)
+       while (sensors[GridDetectPIND] < 550 && sensors[GridDetectPING] < 550)
        {
          readSensor(sensors);
        }
 
        // get the white state.
-       while (sensors[GridDetectPIND] > 300 || sensors[GridDetectPING] > 300)
+       while (sensors[GridDetectPIND] > 300 || sensors[GridDetectPING] > 300 || 
+       (sensors[CenterPIND] < 250 && sensors[CenterPING] < 250) )
        {
          readSensor(sensors);
        }
-       motor_right(0,1);
-       motor_left(0,1);
+       //motor_right(0,1);
+       //motor_left(0,1);
        
 }
 
 static void TurnLeft(void){
-       motor_right(100,1);
-       motor_left(80,0);
+       motor_right(70,1);
+       motor_left(60,0);
        uint16_t sensors[6];
        readSensor(sensors);
        // get to the dark grid pins are dark. 
-       while (sensors[GridDetectPIND] < 550 || sensors[GridDetectPING] < 550)
+       while (sensors[GridDetectPIND] < 550 && sensors[GridDetectPING] < 550)
        {
          readSensor(sensors);
        }
 
        // get the white state.
-       while (sensors[GridDetectPIND] > 300 || sensors[GridDetectPING] > 300)
+       while (sensors[GridDetectPIND] > 300 || sensors[GridDetectPING] > 300 || 
+       (sensors[CenterPIND] < 250 && sensors[CenterPING] < 250) )
        {
          readSensor(sensors);
        }
-       motor_right(0,1);
-       motor_left(0,1);
+       //motor_right(0,1);
+       //motor_left(0,1);
        
 }
 
-static void loop(void){
+static void Transiton(void){
+    /* go forward untill the two IR leds see the white line */
+    motor_right(55,1);
+    motor_left(55,1);
+    uint16_t sensors[6];
+    readSensor(sensors);    
+    while (sensors[GridDetectPIND] > 300 || sensors[GridDetectPING] > 300)
+    {
+        readSensor(sensors);
+    }
+    //motor_right(0,1);
+    //motor_left(0,1);    
+}
 
+static void Pid(void){
+    /* the line follower function */
     int error = 0;
     int lasterror = 0;
     int integralerror= 0;
     int erreurDroite, erreurGauche;
-
-    /* Calculate the calibration values */
-    int32_t sensorsCalib[6]= {0, 0, 0, 0, 0, 0};
-    CalibrateValues(sensorsCalib);
-    /* send the calibrate data throught UART */
 
     int M1 = 120; // the bases speeds of the Right engine
     int M2 = 120; // the bases speeds of the Left engine
@@ -262,12 +260,12 @@ static void loop(void){
         // read the values of the sensors
         readSensor(sensors);
         /* sending the read value using uart*/
-        usart_send_blocking(USART3,   sensors[GridDetectPIND]/4);
+        //usart_send_blocking(USART3,   sensors[GridDetectPIND]/4);
 
         if((sensors[GridDetectPIND] > 600 || sensors[GridDetectPING] > 600 )&& 
-        (sensors[CenterPING] > 600 && sensors[CenterPING] > 600)){ //we are at intersection
-            motor_right(0,1);
-            motor_left(0,1);
+        (sensors[CenterPING] > 600 && sensors[CenterPIND] > 600)){ //we are at intersection
+            //motor_right(0,1);
+            //motor_left(0,1);
             return ;
             
         }
@@ -303,13 +301,13 @@ static void loop(void){
                 else gpio_clear(LED_PORT, GPIO13);
             }*/
 
-            m1Speed = 0.5 *( M1 - motoradjust);
-            m2Speed = 0.5 *( M2 + motoradjust); 
+            m1Speed = 0.55 *( M1 - motoradjust);
+            m2Speed = 0.55 *( M2 + motoradjust); 
 
             // keep the speeds in the authorised intervals
             if (m1Speed < 0) {
                 m1Speed = - m1Speed;
-                motor_right(m1Speed,0);
+                motor_right(m1Speed/2,0);
             }else {
                 if (m1Speed > 255){
                 m1Speed = 255;
@@ -321,7 +319,7 @@ static void loop(void){
             }
             if (m2Speed < 0) {
                 m2Speed = - m2Speed;
-                motor_left(m2Speed,0);
+                motor_left(m2Speed/2,0);
             }else {
                 if (m2Speed > 255) {
                     m2Speed = 255;
@@ -346,25 +344,6 @@ static void loop(void){
 	}
 }
 
-static void Transiton(void){
-    /* go forward untill the two IR leds see the white line */
-    motor_right(120,1);
-    motor_left(120,1);
-    uint16_t sensors[6];
-    readSensor(sensors);
-    while (sensors[GridDetectPIND] > 250 || sensors[GridDetectPING] > 250)
-    {
-        readSensor(sensors);
-    }
-    motor_right(0,1);
-    motor_left(0,1);    
-}
-
-static void Pid(void){
-    /* the line follower function */
-    loop();
-}
-
 int main(void){
 
   	clock_setup();
@@ -372,7 +351,10 @@ int main(void){
     usart_setup();
 
     int PathIndex = 0;
-    char Path[5] = {'L','R','R','L','S'}; //the path to follow in order to get to the final point 
+    char Path[5] = {'R','L','L','L','L'}; //the path to follow in order to get to the final point 
+
+    /* Calculate the calibration values */
+    CalibrateValues(sensorsCalib);
 
     S = PID;
     while (1)

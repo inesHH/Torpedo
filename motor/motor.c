@@ -10,7 +10,7 @@
 #include "QTRSensor.c"
 
 #define PWM_STEPS 256
-#define PWM_FREQUENCY 500 // 500 Hz
+#define PWM_FREQUENCY 200 // 500 Hz
 
 #define MOTORS_TIM          TIM3
 #define MOTORS_GPIO         GPIOC
@@ -303,8 +303,8 @@ static void loop(void){
                 else gpio_clear(LED_PORT, GPIO13);
             }*/
 
-            m1Speed =  M1 - motoradjust;
-            m2Speed =  M2 + motoradjust; 
+            m1Speed = 0.5 *( M1 - motoradjust);
+            m2Speed = 0.5 *( M2 + motoradjust); 
 
             // keep the speeds in the authorised intervals
             if (m1Speed < 0) {
@@ -348,21 +348,16 @@ static void loop(void){
 
 static void Transiton(void){
     /* go forward untill the two IR leds see the white line */
-    motor_right(70,1);
-    motor_left(70,1);
+    motor_right(120,1);
+    motor_left(120,1);
     uint16_t sensors[6];
     readSensor(sensors);
-    while (sensors[GridDetectPIND] > 250 || sensors[GridDetectPIND] > 250)
+    while (sensors[GridDetectPIND] > 250 || sensors[GridDetectPING] > 250)
     {
         readSensor(sensors);
     }
     motor_right(0,1);
     motor_left(0,1);    
-}
-
-static void Rotate(void){
-    /* rotate to the side in the Path variable */
-
 }
 
 static void Pid(void){
@@ -402,6 +397,7 @@ int main(void){
                 break;
             default:
                 Pid();
+                S = TRANS;
                 break;
         }   
     }       

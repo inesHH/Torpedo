@@ -26,9 +26,10 @@
 #define MOTOR_LEFT_IN2      GPIO10
 #define MOTOR_LEFT_CH       TIM_OC3
 
-enum State {PID, TRANS, ROTATE};
+enum State {PID, TRANS, ROTATE, FIN};
 enum State S;
 int32_t sensorsCalib[6]= {0, 0, 0, 0, 0, 0};
+int m1Speed, m2Speed;
 
 /* Set STM32 to 168 MHz. */
 static void clock_setup(void){
@@ -195,7 +196,7 @@ static void TurnRight(void){
 
        // get the white state.
        while (sensors[GridDetectPIND] > 300 || sensors[GridDetectPING] > 300 || 
-       (sensors[CenterPIND] < 250 && sensors[CenterPING] < 250) )
+       sensors[LineFollowPIND] > 300 || sensors[LineFollowPING] > 300)
        {
          readSensor(sensors);
        }
@@ -217,7 +218,7 @@ static void TurnLeft(void){
 
        // get the white state.
        while (sensors[GridDetectPIND] > 300 || sensors[GridDetectPING] > 300 || 
-       (sensors[CenterPIND] < 250 && sensors[CenterPING] < 250) )
+       sensors[LineFollowPIND] > 300 || sensors[LineFollowPING] > 300)
        {
          readSensor(sensors);
        }
@@ -247,12 +248,16 @@ static void Pid(void){
     int integralerror= 0;
     int erreurDroite, erreurGauche;
 
-    int M1 = 120; // the bases speeds of the Right engine
-    int M2 = 120; // the bases speeds of the Left engine
-    int m1Speed, m2Speed;  //the actual speeds of the L/R engine
-    double KP = 0.55 * 2.5; // Coefficients of PID controller proportionnel
+    int M1 = 110; // the bases speeds of the Right engine
+    int M2 = 110; // the bases speeds of the Left engine
+    //the actual speeds of the L/R engine
+    /*double KP = (0.55 * 2.5)/2; // Coefficients of PID controller proportionnel
     double KI = 0; // Coefficients of PID controller integral
     double KD = 0.55 * -0.15; //    Coefficients of PID controller derviate
+    */
+    double KP = (0.55 * 2.5)/5; // Coefficients of PID controller proportionnel
+    double KI = 0; // Coefficients of PID controller integral
+    double KD = -0.2;
     uint16_t sensors[6];
     int motoradjust;
     while(1) {
@@ -262,8 +267,7 @@ static void Pid(void){
         /* sending the read value using uart*/
         //usart_send_blocking(USART3,   sensors[GridDetectPIND]/4);
 
-        if((sensors[GridDetectPIND] > 600 || sensors[GridDetectPING] > 600 )&& 
-        (sensors[CenterPING] > 600 && sensors[CenterPIND] > 600)){ //we are at intersection
+        if(sensors[GridDetectPIND] > 600 || sensors[GridDetectPING] > 600){ //we are at intersection
             //motor_right(0,1);
             //motor_left(0,1);
             return ;
@@ -277,8 +281,10 @@ static void Pid(void){
             */
 
             /*  Calculate the erreur comparing to the calibration value */
-            erreurDroite =  sensors[LineFollowPIND] - sensorsCalib[LineFollowPIND] ;
-            erreurGauche =  sensors[LineFollowPING] - sensorsCalib[LineFollowPING] ;
+            erreurDroite = 1* (sensors[LineFollowPIND] - sensorsCalib[LineFollowPIND]) 
+            + 0 *(sensors[CenterPIND] - sensorsCalib[CenterPIND]);
+            erreurGauche = 1*(sensors[LineFollowPING] - sensorsCalib[LineFollowPING])
+            + 0 * (sensors[CenterPING] - sensorsCalib[CenterPING]);
 
             //erreurGauche = sensors[LineFollowPIND] - sensorsCalib[LineFollowPIND] ;
             //erreurDroite = sensors[LineFollowPING] - sensorsCalib[LineFollowPING] ;
@@ -330,7 +336,7 @@ static void Pid(void){
                 
             }
             
-            if(sensors[CenterPIND] < 250 && sensors[CenterPING] < 250){
+            /*if(sensors[CenterPIND] < 250 && sensors[CenterPING] < 250){
                 motor_left(0,1);
                 motor_right(0,1);
                 gpio_set(LED_PORT, LINEG_LED);
@@ -338,7 +344,7 @@ static void Pid(void){
             }
             else{
                 gpio_clear(LED_PORT, LINEG_LED);
-            }
+            }*/
         }        
 
 	}
@@ -351,7 +357,7 @@ int main(void){
     usart_setup();
 
     int PathIndex = 0;
-    char Path[5] = {'R','L','L','L','L'}; //the path to follow in order to get to the final point 
+    char Path[7] = {'L','R','S','L','S', 'S','R'}; //the path to follow in order to get to the final point 
 
     /* Calculate the calibration values */
     CalibrateValues(sensorsCalib);
@@ -374,7 +380,7 @@ int main(void){
                 {
                   if (Path[PathIndex] == 'R') { TurnRight(); }
                 }
-                PathIndex = (PathIndex == 4) ? 0 : PathIndex + 1;
+                PathIndex = (PathIndex == 7) ? 0 : PathIndex + 1;
                 S = PID;
                 break;
             default:

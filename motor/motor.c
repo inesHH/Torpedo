@@ -250,9 +250,9 @@ static void Pid(void){
     int M1 = 120; // the bases speeds of the Right engine
     int M2 = 120; // the bases speeds of the Left engine
     int m1Speed, m2Speed;  //the actual speeds of the L/R engine
-    double KP =  2.5; // Coefficients of PID controller proportionnel
+    double KP = 0.55 * 2.5; // Coefficients of PID controller proportionnel
     double KI = 0; // Coefficients of PID controller integral
-    double KD = -0.15; //    Coefficients of PID controller derviate
+    double KD = 0.55 * -0.15; //    Coefficients of PID controller derviate
     uint16_t sensors[6];
     int motoradjust;
     while(1) {
@@ -307,7 +307,7 @@ static void Pid(void){
             // keep the speeds in the authorised intervals
             if (m1Speed < 0) {
                 m1Speed = - m1Speed;
-                motor_right(m1Speed/2,0);
+                motor_right(m1Speed,0);
             }else {
                 if (m1Speed > 255){
                 m1Speed = 255;
@@ -319,7 +319,7 @@ static void Pid(void){
             }
             if (m2Speed < 0) {
                 m2Speed = - m2Speed;
-                motor_left(m2Speed/2,0);
+                motor_left(m2Speed,0);
             }else {
                 if (m2Speed > 255) {
                     m2Speed = 255;

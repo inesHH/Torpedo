@@ -1,5 +1,5 @@
 //#include <stdint.h>
-
+#include <stdlib.h>
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/stm32/timer.h>
@@ -143,7 +143,7 @@ static void pwm_gpio_setup(void){
 
 }
 
-static void motor_right(uint16_t duty_cycle, uint8_t direction){
+static void motor_right(uint8_t duty_cycle, uint8_t direction){
 
     timer_set_oc_value(MOTORS_TIM,MOTOR_RIGHT_CH,duty_cycle); // set duty cycle
 
@@ -159,7 +159,7 @@ static void motor_right(uint16_t duty_cycle, uint8_t direction){
 }
 
 static void motor_left(uint8_t duty_cycle, uint8_t direction){
-
+    
     timer_set_oc_value(MOTORS_TIM,MOTOR_LEFT_CH,duty_cycle); // set duty cycle
 
     if(direction == 1){
@@ -255,9 +255,9 @@ static void Pid(void){
     double KI = 0; // Coefficients of PID controller integral
     double KD = 0.55 * -0.15; //    Coefficients of PID controller derviate
     */
-    double KP = (0.55 * 2.5)/5; // Coefficients of PID controller proportionnel
-    double KI = 0; // Coefficients of PID controller integral
-    double KD = -0.2;
+    double KP = 0.5 ; // Coefficients of PID controller proportionnel
+    double KI = 0.0002; // Coefficients of PID controller integral
+    double KD = -0.25;
     uint16_t sensors[6];
     int motoradjust;
     while(1) {
@@ -295,6 +295,17 @@ static void Pid(void){
 
             /*  calculate the new speed according to error */
             motoradjust = KP *error + KI * integralerror + KD *(lasterror - error);
+            /*char buffer[20];
+            itoa((int)(KP *error),buffer,10);
+            usart_send_blocking(USART3, 'K' );
+            usart_send_blocking(USART3, 'P' );
+            for (int i = 0; i < 3; i++)
+            {
+                usart_send_blocking(USART3, (uint16_t)buffer[i]);
+            }            
+            usart_send_blocking(USART3, '\n');*/
+            //usart_send_blocking(USART3,   KI * integralerror);
+            //usart_send_blocking(USART3, KD *(lasterror - error));
             lasterror = error; // for derivation
 
             /*if( motoradjust < 50) {
@@ -356,6 +367,31 @@ int main(void){
 	motors_init();
     usart_setup();
 
+    /*int mat[ROW][COL] =
+    {
+    {0,0,0,0,0,0},
+            {0,0,0,0,0,0},
+            {0,0,0,0,0,0},
+            {0,0,0,1,1,0},
+            {0,0,0,1,1,0},
+            {0,0,0,1,1,0},
+            {0,1,1,1,1,0},
+            {1,1,1,1,0,0},
+            {0,0,0,0,0,0}
+    };
+
+    Point source = {7, 0};
+    Point dest = {3, 3};
+
+    uint8_t path_from_source[50];
+
+
+
+    int size = BFS(mat, source, dest,path_from_source);
+
+    for(int loop = 0; loop < size; loop++)
+      printf("%d  ", path_from_source[loop]);*/ 
+
     int PathIndex = 0;
     char Path[7] = {'L','R','S','L','S', 'S','R'}; //the path to follow in order to get to the final point 
 
@@ -367,14 +403,17 @@ int main(void){
     {
         switch (S){
             case PID:
+                usart_send_blocking(USART3, 'P');
                 Pid(); // call the line follower function
-                S = TRANS;
+                S = ROTATE;
                 break;
             case TRANS:
+                usart_send_blocking(USART3, 'T');
                 Transiton(); // call the black line transit function
                 S = ROTATE;
                 break;
             case ROTATE:
+                usart_send_blocking(USART3, 'R');
                 if(Path[PathIndex] == 'L'){ TurnLeft();}
                 else 
                 {
@@ -385,7 +424,7 @@ int main(void){
                 break;
             default:
                 Pid();
-                S = TRANS;
+                S = ROTATE;
                 break;
         }   
     }       
